@@ -1,15 +1,13 @@
 import { fromEvent, interval, merge, NEVER } from 'rxjs';
-import { scan, skipUntil, takeUntil } from 'rxjs/operators';
+import { map, scan, switchMap } from 'rxjs/operators';
 import { setCount, startButton, pauseButton } from './utilities';
 
-const start$ = fromEvent(startButton, 'click');
-const pause$ = fromEvent(pauseButton, 'click');
+const start$ = fromEvent(startButton, 'click').pipe(map(() => true));
+const pause$ = fromEvent(pauseButton, 'click').pipe(map(() => false));
 
-// obvs issues, start/pause only once as using *Until
-const timer$ = interval(1000)
+merge(start$, pause$)
   .pipe(
-    skipUntil(start$),
-    takeUntil(pause$),
+    switchMap((running) => (running ? interval(1000) : NEVER)),
     scan((total) => total + 1, 0),
   )
   .subscribe(setCount);
