@@ -27,20 +27,21 @@ const endpoint = 'http://localhost:3333/api/facts?delay=1000&flakiness=2';
 const fetch$ = fromEvent(fetchButton, 'click').pipe(map(() => true));
 const stop$ = fromEvent(stopButton, 'click').pipe(map(() => false));
 
-const fetchData$ = fromFetch(endpoint).pipe(
-  mergeMap((response) => {
-    if (response.ok) {
-      return response.json();
-    } else {
-      throw new Error('something bad happened :(');
-    }
-  }),
-  retry(4),
-  // catchError here otherwise completes the outer observable
-  catchError((error) => {
-    return of({ error: error.message });
-  }),
-);
+const fetchData$ = () =>
+  fromFetch(endpoint).pipe(
+    mergeMap((response) => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error('something bad happened :(');
+      }
+    }),
+    retry(4),
+    // catchError here otherwise completes the outer observable
+    catchError((error) => {
+      return of({ error: error.message });
+    }),
+  );
 
 merge(fetch$, stop$)
   .pipe(
@@ -48,7 +49,9 @@ merge(fetch$, stop$)
       clearFacts();
       clearError();
     }),
-    switchMap((shouldFetch) => (shouldFetch ? fetchData$ : NEVER)),
+    switchMap((shouldFetch) =>
+      shouldFetch ? timer(0, 5000).pipe(mergeMap(fetchData$)) : NEVER,
+    ),
   )
   .subscribe(({ facts, error }) => {
     if (facts) {
