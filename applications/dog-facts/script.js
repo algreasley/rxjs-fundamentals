@@ -28,6 +28,10 @@ const fetch$ = fromEvent(fetchButton, 'click');
 
 fetch$
   .pipe(
+    tap(() => {
+      clearFacts();
+      clearError();
+    }),
     mergeMap(() =>
       fromFetch(endpoint).pipe(
         mergeMap((response) => {
@@ -37,6 +41,8 @@ fetch$
             throw new Error('something bad happened :(');
           }
         }),
+        retry(4),
+        // catchError here otherwise completes the outer observable
         catchError((error) => {
           return of({ error: error.message });
         }),
@@ -44,26 +50,9 @@ fetch$
     ),
   )
   .subscribe(({ facts, error }) => {
-    clearFacts();
-    clearError();
     if (facts) {
       addFacts({ facts });
     } else {
       setError(error);
     }
   });
-
-// mergeMap(() => fromFetch(endpoint)).pipe(
-//   mergeMap((response) => {
-//     if (response.ok) {
-//       console.log(response);
-//       return response.json();
-//     } else {
-//       console.error(error);
-//       throw new Error('something bad happened :(');
-//     }
-//   }),
-//   catchError((error) => {
-//     return of({ error: error.message });
-//   }),
-// ),
