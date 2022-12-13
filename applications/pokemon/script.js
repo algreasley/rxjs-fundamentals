@@ -27,4 +27,30 @@ import {
   form,
 } from '../pokemon/utilities';
 
-const endpoint = 'http://localhost:3333/api/pokemon?delay=100';
+const endpoint = 'http://localhost:3333/api/pokemon/search/';
+
+const search$ = fromEvent(search, 'input').pipe(
+  tap(() => {
+    clearResults();
+  }),
+  map((event) => event.target.value),
+  mergeMap((searchTerm) =>
+    fromFetch(endpoint + searchTerm).pipe(
+      mergeMap((response) => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error('something bad happened :(');
+        }
+      }),
+    ),
+  ),
+);
+
+search$.subscribe(({ pokemon, error }) => {
+  if (pokemon) {
+    addResult({ pokemon });
+  } else {
+    setError(error);
+  }
+});
