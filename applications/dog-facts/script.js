@@ -10,6 +10,7 @@ import {
   switchMap,
   tap,
   pluck,
+  map,
 } from 'rxjs/operators';
 
 import {
@@ -22,3 +23,13 @@ import {
 } from './utilities';
 
 const endpoint = 'http://localhost:3333/api/facts';
+
+const fetch$ = fromEvent(fetchButton, 'click');
+
+fetch$
+  .pipe(
+    mergeMap(() => fromFetch(endpoint)),
+    mergeMap((response) => response.json()),
+    tap((val) => console.log(val)),
+  )
+  .subscribe(addFacts);
