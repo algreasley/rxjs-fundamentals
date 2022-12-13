@@ -28,14 +28,20 @@ const fetch$ = fromEvent(fetchButton, 'click');
 
 fetch$
   .pipe(
-    mergeMap(() => fromFetch(endpoint)),
-    mergeMap((response) => {
-      if (response.ok) {
-        return response.json();
-      } else {
-        return of({ error: 'something bad happened :(' });
-      }
-    }),
+    mergeMap(() =>
+      fromFetch(endpoint).pipe(
+        mergeMap((response) => {
+          if (response.ok) {
+            return response.json();
+          } else {
+            throw new Error('something bad happened :(');
+          }
+        }),
+        catchError((error) => {
+          return of({ error: error.message });
+        }),
+      ),
+    ),
   )
   .subscribe(({ facts, error }) => {
     clearFacts();
@@ -46,3 +52,18 @@ fetch$
       setError(error);
     }
   });
+
+// mergeMap(() => fromFetch(endpoint)).pipe(
+//   mergeMap((response) => {
+//     if (response.ok) {
+//       console.log(response);
+//       return response.json();
+//     } else {
+//       console.error(error);
+//       throw new Error('something bad happened :(');
+//     }
+//   }),
+//   catchError((error) => {
+//     return of({ error: error.message });
+//   }),
+// ),
