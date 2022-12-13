@@ -30,12 +30,15 @@ import {
 const endpoint = 'http://localhost:3333/api/pokemon/search/';
 
 const search$ = fromEvent(search, 'input').pipe(
+  debounceTime(300),
   tap(() => {
     clearResults();
   }),
   map((event) => event.target.value),
-  mergeMap((searchTerm) =>
-    fromFetch(endpoint + searchTerm).pipe(
+  switchMap((searchTerm) =>
+    fromFetch(
+      endpoint + searchTerm + '?delay=1000&chaos=true&flakiness=2',
+    ).pipe(
       mergeMap((response) => {
         if (response.ok) {
           return response.json();
@@ -43,14 +46,17 @@ const search$ = fromEvent(search, 'input').pipe(
           throw new Error('something bad happened :(');
         }
       }),
+      catchError((error) => {
+        return of({ error: error.message });
+      }),
     ),
   ),
 );
 
 search$.subscribe(({ pokemon, error }) => {
   if (pokemon) {
-    addResult({ pokemon });
+    addResult(pokemon);
   } else {
-    setError(error);
+    console.error(error);
   }
 });
